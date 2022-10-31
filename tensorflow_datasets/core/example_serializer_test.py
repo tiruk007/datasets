@@ -106,11 +106,11 @@ class ExampleSerializerTest(testing.SubTestCase):
         out, {
             'ragged_flat_values': (
                 np.array([1, 2, 3, 4, 5]),
-                feature_lib.TensorInfo(shape=(None,), dtype=tf.int64),
+                feature_lib.TensorInfo(shape=(None,), dtype=np.int64),
             ),
             'ragged_row_lengths_0': (
                 [3, 0, 2],
-                feature_lib.TensorInfo(shape=(None,), dtype=tf.int64),
+                feature_lib.TensorInfo(shape=(None,), dtype=np.int64),
             ),
         })
 
@@ -131,11 +131,11 @@ class ExampleSerializerTest(testing.SubTestCase):
         out, {
             'ragged_flat_values': (
                 np.array([1, 2, 3, 4, 5]),
-                feature_lib.TensorInfo(shape=(None,), dtype=tf.int64),
+                feature_lib.TensorInfo(shape=(None,), dtype=np.int64),
             ),
             'ragged_row_lengths_0': (
                 [3, 0, 2],
-                feature_lib.TensorInfo(shape=(None,), dtype=tf.int64),
+                feature_lib.TensorInfo(shape=(None,), dtype=np.int64),
             ),
         })
 

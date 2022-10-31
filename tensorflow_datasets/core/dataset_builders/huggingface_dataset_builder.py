@@ -28,6 +28,7 @@ import datetime
 import io
 from typing import Any, Dict, Mapping, Optional, Union
 
+import numpy as np
 from tensorflow_datasets.core import dataset_builder
 from tensorflow_datasets.core import dataset_info as dataset_info_lib
 from tensorflow_datasets.core import download
@@ -42,22 +43,22 @@ from tensorflow_datasets.core.utils.lazy_imports_utils import tensorflow as tf
 _IMAGE_ENCODING_FORMAT = "png"
 
 
-def _convert_to_tf_dtype(dtype: str) -> tf.dtypes.DType:
+def _convert_to_np_dtype(dtype: str) -> np.dtype:
   """Returns the `tf.dtype` scalar feature."""
   str2val = {
-      "bool_": tf.bool,
-      "float": tf.float32,
-      "double": tf.float64,
-      "large_string": tf.string,
-      "utf8": tf.string,
+      "bool_": np.bool_,
+      "float": np.float32,
+      "double": np.float64,
+      "large_string": np.bytes_,
+      "utf8": np.bytes_,
   }
   if dtype in str2val:
     return str2val[dtype]
-  elif hasattr(tf.dtypes, dtype):
-    return getattr(tf.dtypes, dtype)
+  elif hasattr(np, dtype):
+    return getattr(np, dtype)
   elif dtype.startswith("timestamp"):
     # Timestamps are converted to seconds since UNIX epoch.
-    return tf.int64
+    return np.int64
   else:
     raise ValueError(
         f"Unrecognized type {dtype}. Please open an issue if you think "
@@ -75,7 +76,7 @@ def extract_features(hf_features) -> feature_lib.FeatureConnector:
   if isinstance(hf_features, hf_datasets.Sequence):
     return feature_lib.Sequence(feature=extract_features(hf_features.feature))
   if isinstance(hf_features, hf_datasets.Value):
-    return feature_lib.Scalar(dtype=_convert_to_tf_dtype(hf_features.dtype))
+    return feature_lib.Scalar(dtype=_convert_to_np_dtype(hf_features.dtype))
   if isinstance(hf_features, hf_datasets.ClassLabel):
     if hf_features.names:
       return feature_lib.ClassLabel(names=hf_features.names)
@@ -132,6 +133,7 @@ def _convert_value(value: Any, feature: feature_lib.FeatureConnector) -> Any:
   elif isinstance(feature, feature_lib.Scalar):
     if value is not None:
       return value
+    # TODO(pierremarcenac): change this?
     elif feature.dtype == tf.string:
       return ""
     elif feature.dtype.is_integer:

@@ -148,12 +148,11 @@ def _is_string(item):
   return False
 
 
-def _item_to_np_array(item, dtype: tf.dtypes.DType, numpy_dtype: np.dtype,
-                      shape: Shape) -> np.ndarray:
+def _item_to_np_array(item, dtype: np.dtype, shape: Shape) -> np.ndarray:
   """Single item to a np.array."""
-  result = np.asanyarray(item, dtype=numpy_dtype)
+  result = np.asanyarray(item, dtype=dtype)
   utils.assert_shape_match(result.shape, shape)
-  if utils.is_same_tf_dtype(dtype, tf.string) and not _is_string(item):
+  if utils.is_same_tf_dtype(dtype, np.bytes_) and not _is_string(item):
     raise ValueError(
         f"Unsupported value: {result}\nCould not convert to bytes list.")
   return result
@@ -166,7 +165,6 @@ def _item_to_tf_feature(
       item,
       shape=tensor_info.shape,
       dtype=tensor_info.dtype,
-      numpy_dtype=tensor_info.numpy_dtype,
   )
 
   # Convert boolean to integer (tf.train.Example does not support bool)
@@ -244,7 +242,7 @@ def _add_ragged_fields(example_data, tensor_info: feature_lib.TensorInfo):
     return (example_data, tensor_info)
   # Multiple level sequence:
   else:
-    tensor_info_length = feature_lib.TensorInfo(shape=(None,), dtype=tf.int64)
+    tensor_info_length = feature_lib.TensorInfo(shape=(None,), dtype=np.int64)
     ragged_attr_dict = {
         "ragged_row_lengths_{}".format(i): (length, tensor_info_length)
         for i, length in enumerate(nested_row_lengths)
@@ -289,7 +287,7 @@ def _extract_ragged_attributes(nested_list,
   if not flat_values:  # The full sequence is empty
     flat_values = np.empty(
         shape=(0,) + tensor_info.shape[tensor_info.sequence_rank:],
-        dtype=tensor_info.numpy_dtype,
+        dtype=tensor_info.dtype,
     )
   else:  # Otherwise, merge all flat values together, some might be empty
     flat_values = np.stack(flat_values)
@@ -333,7 +331,6 @@ def _fill_ragged_attribute(ext: RaggedExtraction) -> None:
       item = _item_to_np_array(  # Normalize the item
           item,
           dtype=ext.tensor_info.dtype,
-          numpy_dtype=ext.tensor_info.numpy_dtype,
           # We only check the non-ragged shape
           shape=ext.tensor_info.shape[ext.tensor_info.sequence_rank:],
       )

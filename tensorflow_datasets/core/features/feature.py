@@ -26,8 +26,10 @@ import importlib
 import json
 import os
 import typing
-from typing import Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
+from typing import cast, Any, Dict, List, Mapping, Optional, Type, TypeVar, Union
 
+from absl import logging
+from etils import enp
 from etils import epath
 import numpy as np
 import six
@@ -67,7 +69,7 @@ class TensorInfo(object):
 
   def __init__(self,
                shape: Shape,
-               dtype: tf.dtypes.DType,
+               dtype: Union[np.dtype, tf.dtypes.DType],
                default_value=None,
                sequence_rank: Optional[int] = None,
                dataset_lvl: int = 0):
@@ -82,8 +84,15 @@ class TensorInfo(object):
       dataset_lvl: `int`, if >0, nesting level of a `tfds.features.Dataset`.
     """
     self.shape = tf_utils.convert_to_shape(shape)
-    self.dtype = dtype
-    self.numpy_dtype: np.dtype = dtype.as_numpy_dtype
+    tf_already_loaded = enp.lazy.has_tf
+    if tf_already_loaded and isinstance(dtype, tf.dtypes.DType):
+      self.dtype: np.dtype = dtype.as_numpy_dtype
+      logging.warning(
+          'Warning: You use TensorFlow DType %s in tfds.features.TensorInfo. '
+          'This will soon be deprecated in favor of NumPy DTypes. '
+          'In the meantime it was converted to %s.', dtype, self.dtype)
+    else:
+      self.dtype: np.dtype = cast(np.dtype, dtype)
     self.default_value = default_value
     self.sequence_rank = sequence_rank or 0
     self.dataset_lvl = dataset_lvl
@@ -114,10 +123,11 @@ class TensorInfo(object):
     Returns:
       The tf.TensorSpec corresponding to this instance.
     """
+    tf_dtype = tf.dtypes.as_dtype(self.dtype)
     if self.dataset_lvl > 1 or self.sequence_rank > 1:
       return tf.RaggedTensorSpec(
-          dtype=self.dtype, shape=_to_tensor_shape(self.shape))
-    return tf.TensorSpec(dtype=self.dtype, shape=_to_tensor_shape(self.shape))
+          dtype=tf_dtype, shape=_to_tensor_shape(self.shape))
+    return tf.TensorSpec(dtype=tf_dtype, shape=_to_tensor_shape(self.shape))
 
   def __eq__(self, other):
     """Equality."""
@@ -233,9 +243,9 @@ class FeatureConnector(object):
 
     ```
     return {
-        'image': tfds.features.TensorInfo(shape=(None,), dtype=tf.uint8),
-        'height': tfds.features.TensorInfo(shape=(), dtype=tf.int32),
-        'width': tfds.features.TensorInfo(shape=(), dtype=tf.int32),
+        'image': tfds.features.TensorInfo(shape=(None,), dtype=np.uint8),
+        'height': tfds.features.TensorInfo(shape=(), dtype=np.int32),
+        'width': tfds.features.TensorInfo(shape=(), dtype=np.int32),
     }
     ```
 
@@ -243,7 +253,7 @@ class FeatureConnector(object):
     directly:
 
     ```
-    return tfds.features.TensorInfo(shape=(256, 256), dtype=tf.uint8)
+    return tfds.features.TensorInfo(shape=(256, 256), dtype=np.uint8)
     ```
 
     Returns:
@@ -270,11 +280,12 @@ class FeatureConnector(object):
   @py_utils.memoized_property
   def dtype(self) -> TreeDict[tf.dtypes.DType]:
     """Return the dtype (or dict of dtype) of this FeatureConnector."""
-    return tf.nest.map_structure(lambda t: t.dtype, self.get_tensor_info())
+    return tf.nest.map_structure(lambda t: tf.dtypes.as_dtype(t.dtype),
+                                 self.get_tensor_info())
 
   @py_utils.memoized_property
   def numpy_dtype(self) -> TreeDict[np.dtype]:
-    return tf.nest.map_structure(lambda t: t.numpy_dtype,
+    return tf.nest.map_structure(lambda t: t.dtype,
                                  self.get_tensor_info())
 
   @classmethod
@@ -292,10 +303,10 @@ class FeatureConnector(object):
       try:
         # Import to register the FeatureConnector
         importlib.import_module(module_name)
-      except ImportError:
+      except ImportError as exception:
         raise ValueError(
             f'{err_msg}\nCould not import {module_name}. You might have to '
-            'install additional dependencies.')
+            'install additional dependencies.') from exception
 
     feature_class = cls._registered_features.get(python_class_name)
     if feature_class is None:
@@ -546,9 +557,9 @@ class FeatureConnector(object):
 
     ```
     return {
-        'image': tfds.features.TensorInfo(shape=(None,), dtype=tf.uint8),
-        'height': tfds.features.TensorInfo(shape=(), dtype=tf.int32),
-        'width': tfds.features.TensorInfo(shape=(), dtype=tf.int32),
+        'image': tfds.features.TensorInfo(shape=(None,), dtype=np.uint8),
+        'height': tfds.features.TensorInfo(shape=(), dtype=np.int32),
+        'width': tfds.features.TensorInfo(shape=(), dtype=np.int32),
     }
     ```
 
@@ -556,7 +567,7 @@ class FeatureConnector(object):
     directly:
 
     ```
-    return tfds.features.TensorInfo(shape=(64, 64), tf.uint8)
+    return tfds.features.TensorInfo(shape=(64, 64), np.uint8)
     ```
 
     If not defined, the retuned values are automatically deduced from the
@@ -1020,12 +1031,12 @@ def from_shape_proto(shape: feature_pb2.Shape) -> utils.Shape:
   return [parse_dimension(dimension) for dimension in shape.dimensions]
 
 
-def encode_dtype(dtype: tf.dtypes.DType) -> str:
+def encode_dtype(dtype: np.dtype) -> str:
   return dtype.name
 
 
-def parse_dtype(dtype: str) -> tf.dtypes.DType:
-  return tf.dtypes.as_dtype(dtype)
+def parse_dtype(dtype: str) -> np.dtype:
+  return np.dtype(dtype)
 
 
 def convert_feature_name_to_filename(

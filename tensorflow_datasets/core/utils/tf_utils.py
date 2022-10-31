@@ -19,8 +19,9 @@ from __future__ import annotations
 
 import collections
 import contextlib
-from typing import Any, Union
+from typing import Any, Optional, Union
 
+from etils import enp
 import numpy as np
 from tensorflow_datasets.core.utils import py_utils
 from tensorflow_datasets.core.utils import type_utils
@@ -58,7 +59,6 @@ class TFGraphRunner(object):
   Usage:
     graph_runner = TFGraphRunner()
     output = graph_runner.run(tf.sigmoid, np.ones(shape=(5,)))
-
   """
 
   __slots__ = ['_graph_run_cache']
@@ -141,12 +141,20 @@ def convert_to_shape(shape: Any) -> type_utils.Shape:
 
 
 def is_dtype(value):
-  """Return True is the given value is a TensorFlow dtype."""
+  """Returns True is the given value is a NumPy dtype."""
   try:
-    tf.as_dtype(value)
+    np.dtype(value)
   except TypeError:
     return False
   return True
+
+
+def np_dtype(value) -> Optional[np.dtype]:
+  """Returns the NumPy dtype if it exists, else None."""
+  try:
+    return enp.lazy.as_dtype(value)
+  except TypeError:
+    return None
 
 
 @py_utils.memoize()

@@ -20,6 +20,7 @@ from __future__ import annotations
 import concurrent.futures
 from typing import Dict, List, Union
 
+import numpy as np
 from tensorflow_datasets.core import utils
 from tensorflow_datasets.core.features import feature as feature_lib
 from tensorflow_datasets.core.features import tensor_feature
@@ -27,7 +28,6 @@ from tensorflow_datasets.core.features import top_level_feature
 from tensorflow_datasets.core.proto import feature_pb2
 from tensorflow_datasets.core.utils import py_utils
 from tensorflow_datasets.core.utils import type_utils
-from tensorflow_datasets.core.utils.lazy_imports_utils import tensorflow as tf
 
 Json = type_utils.Json
 WORKER_COUNT = 16
@@ -302,10 +302,11 @@ class FeaturesDict(top_level_feature.TopLevelFeature):
 
 def to_feature(value: feature_lib.FeatureConnectorArg):
   """Convert the given value to Feature if necessary."""
+  np_value = utils.np_dtype(value)
   if isinstance(value, feature_lib.FeatureConnector):
     return value
-  elif utils.is_dtype(value):  # tf.int32, tf.string,...
-    return tensor_feature.Tensor(shape=(), dtype=tf.as_dtype(value))
+  elif np_value is not None:  # np.int32, np.bytes_,...
+    return tensor_feature.Tensor(shape=(), dtype=np_value)
   elif isinstance(value, dict):
     return FeaturesDict(value)
   else:

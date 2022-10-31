@@ -64,7 +64,7 @@ class Tensor(feature_lib.FeatureConnector):
       self,
       *,
       shape: utils.Shape,
-      dtype: tf.dtypes.DType,
+      dtype: np.dtype,
       # TODO(tfds): Could add an Encoding.AUTO to automatically compress
       # tensors using some heuristic. However, careful about backward
       # compatibility.
@@ -106,7 +106,7 @@ class Tensor(feature_lib.FeatureConnector):
   def get_serialized_info(self):
     """See base class for details."""
     if self._encoded_to_bytes:  # Values encoded (stored as bytes)
-      serialized_spec = feature_lib.TensorInfo(shape=(), dtype=tf.string)
+      serialized_spec = feature_lib.TensorInfo(shape=(), dtype=np.bytes_)
     else:
       serialized_spec = feature_lib.TensorInfo(
           shape=self._shape,
@@ -120,7 +120,7 @@ class Tensor(feature_lib.FeatureConnector):
           'shape':
               feature_lib.TensorInfo(
                   shape=(len(self._shape),),
-                  dtype=tf.int32,
+                  dtype=np.int32,
               ),
           'value':
               serialized_spec,
