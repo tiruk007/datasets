@@ -25,7 +25,89 @@ from tensorflow_datasets.core.features.class_label_feature import ClassLabel
 from tensorflow_datasets.core.features.sequence_feature import Sequence
 from tensorflow_datasets.core.features.text_feature import Text
 
-POS_TAGS = (
+# Standard POS tags for family of CoNLL-based datasets.
+
+# Used by: conll2002
+CONLL_2002_ES_POS_TAGS = (
+    "AO",
+    "AQ",
+    "CC",
+    "CS",
+    "DA",
+    "DE",
+    "DD",
+    "DI",
+    "DN",
+    "DP",
+    "DT",
+    "Faa",
+    "Fat",
+    "Fc",
+    "Fd",
+    "Fe",
+    "Fg",
+    "Fh",
+    "Fia",
+    "Fit",
+    "Fp",
+    "Fpa",
+    "Fpt",
+    "Fs",
+    "Ft",
+    "Fx",
+    "Fz",
+    "I",
+    "NC",
+    "NP",
+    "P0",
+    "PD",
+    "PI",
+    "PN",
+    "PP",
+    "PR",
+    "PT",
+    "PX",
+    "RG",
+    "RN",
+    "SP",
+    "VAI",
+    "VAM",
+    "VAN",
+    "VAP",
+    "VAS",
+    "VMG",
+    "VMI",
+    "VMM",
+    "VMN",
+    "VMP",
+    "VMS",
+    "VSG",
+    "VSI",
+    "VSM",
+    "VSN",
+    "VSP",
+    "VSS",
+    "Y",
+    "Z",
+)
+
+CONLL_2002_NL_POS_TAGS = (
+    "Adj",
+    "Adv",
+    "Art",
+    "Conj",
+    "Int",
+    "Misc",
+    "N",
+    "Num",
+    "Prep",
+    "Pron",
+    "Punc",
+    "V",
+)
+
+# Used by: conll2003
+CONLL_2003_POS_TAGS = (
     '"',
     "''",
     "#",
@@ -75,6 +157,9 @@ POS_TAGS = (
     "WRB",
 )
 
+# Standard chunk tags for family of CoNLL-based datasets.
+
+# Used by: conll2003
 CHUNK_TAGS = (
     "O",
     "B-ADJP",
@@ -101,6 +186,9 @@ CHUNK_TAGS = (
     "I-VP",
 )
 
+# Standard NER tags for family of CoNLL-based datasets.
+
+# Used by: conll2002, conll2003
 NER_TAGS = (
     "O",
     "B-PER",
@@ -113,7 +201,7 @@ NER_TAGS = (
     "I-MISC",
 )
 
-# Standard separators for families of CoNLL-based datasets.
+# Standard separators for family of CoNLL-based datasets.
 
 # Used by: conll2002, conll2003
 CONLL_2002_SEPARATOR = " "
@@ -122,19 +210,45 @@ CONLL_2002_SEPARATOR = " "
 # Importantly, the order of the features should map the order of the feature
 # columns in the input files.
 
-# Used by: conll2002, conll2003
-CONLL_2002_ORDERED_FEATURES = collections.OrderedDict({
+# Used by: conll2002
+CONLL_2002_ES_ORDERED_FEATURES = collections.OrderedDict({
     "tokens": Sequence(Text()),
-    "pos": Sequence(ClassLabel(names=POS_TAGS)),
+    "pos": Sequence(ClassLabel(names=CONLL_2002_ES_POS_TAGS)),
+    "ner": Sequence(ClassLabel(names=NER_TAGS)),
+})
+
+CONLL_2002_NL_ORDERED_FEATURES = collections.OrderedDict({
+    "tokens": Sequence(Text()),
+    "pos": Sequence(ClassLabel(names=CONLL_2002_NL_POS_TAGS)),
+    "ner": Sequence(ClassLabel(names=NER_TAGS)),
+})
+
+# Used by: conll2003
+CONLL_2003_ORDERED_FEATURES = collections.OrderedDict({
+    "tokens": Sequence(Text()),
+    "pos": Sequence(ClassLabel(names=CONLL_2003_POS_TAGS)),
     "chunks": Sequence(ClassLabel(names=CHUNK_TAGS)),
     "ner": Sequence(ClassLabel(names=NER_TAGS)),
 })
 
 # Standard ConllBuilderConfig for family of CoNLL-based datasets.
 
-# Used by: conll2002, conll2003
-CONLL_2002_CONFIG = conll_dataset_builder.ConllBuilderConfig(
-    name="conll2022",
+# Used by: conll2002
+CONLL_2002_ES_CONFIG = conll_dataset_builder.ConllBuilderConfig(
+    name="es",
     separator=CONLL_2002_SEPARATOR,
-    ordered_features=CONLL_2002_ORDERED_FEATURES,
+    ordered_features=CONLL_2002_ES_ORDERED_FEATURES,
+)
+
+CONLL_2002_NL_CONFIG = conll_dataset_builder.ConllBuilderConfig(
+    name="nl",
+    separator=CONLL_2002_SEPARATOR,
+    ordered_features=CONLL_2002_NL_ORDERED_FEATURES,
+)
+
+# Used by: conll2003
+CONLL_2003_CONFIG = conll_dataset_builder.ConllBuilderConfig(
+    name="conll2003",
+    separator=CONLL_2002_SEPARATOR,
+    ordered_features=CONLL_2003_ORDERED_FEATURES,
 )
